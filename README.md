@@ -1,5 +1,8 @@
 # BioLiteratureKB — 本地生物医学文献知识库
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
+
 **Zotero → 本地 PDF → 高质量 Markdown → 深度 Paper Digest → 全文索引 → Progressive Retrieval → Codex / Claude Code Skill**
 
 一个长期可维护的本地科研文献记忆系统。核心目标：让高能力 Agent（Codex / Claude Code）在极低 Context 成本下，按需使用你积累的前沿论文，完成真正的项目特异性科研推理。
@@ -78,8 +81,14 @@ biokb search-fulltext "<query>"       # 跨库原文段落
 
 仓库内置 `skill/bio-literature-kb/SKILL.md`。安装到 Claude Code / Codex 后，Agent 会在科研设计类任务中自动按 `search → digest → excerpt → 原文 → PDF` 的渐进检索顺序调用知识库，绝不批量加载文献。
 
-- Claude Code：复制到 `~/.claude/skills/bio-literature-kb/`
-- Codex：复制到项目的 `.codex/skills/` 或用户级 skills 目录
+**Claude Code**（Windows PowerShell）：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills\bio-literature-kb"
+Copy-Item "skill\bio-literature-kb\SKILL.md" "$env:USERPROFILE\.claude\skills\bio-literature-kb\"
+```
+
+**Codex**：复制到项目的 `.codex/skills/` 或用户级 skills 目录。
 
 ## 目录结构
 
