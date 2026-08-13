@@ -1,0 +1,26 @@
+# Python
+.venv/
+.venv-mineru/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# 密钥与本地环境
+.env
+
+# 运行时生成物（索引 / 状态 / 日志 / 失败清单）
+index/
+system/
+paper_digests/
+records/
+
+# 用户数据（Zotero 导出 JSON / PDF / Markdown 转换稿）
+zotero来源/json（允许更新）/
+zotero/json/
+zotero来源/原文PDF/
+zotero来源/原文markdown/
+zotero/pdfs/
+zotero/markdown/

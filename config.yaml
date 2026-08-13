@@ -1,0 +1,50 @@
+# BioLiteratureKB 配置
+project:
+  root: auto            # auto = 本 config.yaml 所在目录；也可设为绝对路径
+
+zotero:
+  # auto = 自动探测：JSON 目录在根目录下找含 *.json 的子目录；
+  # storage 在 D:/zotero/storage、~/Zotero/storage 等常见位置探测
+  json_dir: "auto"
+  storage_root: "auto"
+  # 自动探测失败时可显式指定：
+  # json_dir: "zotero来源/json（允许更新）"
+  # storage_root: "D:/zotero/storage"
+
+pdf:
+  output_dir: "zotero来源/原文PDF"
+  inventory_file: "system/pdf_inventory.json"
+
+markdown:
+  output_dir: "zotero来源/原文markdown"
+  parser_priority:
+    - docling
+    - mineru
+    - pymupdf4llm
+  # MinerU 与 docling 依赖冲突（transformers），建议装独立 venv 后在此指定其 CLI 路径
+  mineru_bin: ".venv-mineru/Scripts/mineru.exe"
+
+digest:
+  output_dir: "paper_digests"
+  record_dir: "records"
+  version: "v1"
+  max_chars_per_call: 400000   # 1M 上下文下整篇精读；仅超长输入才分段合成
+
+llm:
+  base_url_env: "BIOKB_LLM_BASE_URL"
+  api_key_env: "BIOKB_LLM_API_KEY"
+  model_env: "BIOKB_LLM_MODEL"
+  temperature: 0.0
+  timeout_seconds: 600         # thinking 模式 + 长文精读需要更长超时
+  max_retries: 3
+  max_tokens: 384000           # 模型最大输出预算（max effort 下官方建议到 384K）；设 0 则省略该字段
+  thinking: enabled            # deepseek-v4-flash thinking 模式（enabled/disabled）
+  reasoning_effort: max        # low / high / max（thinking 模式下的推理深度）
+
+retrieval:
+  default_search_top: 10
+  default_excerpt_top: 5
+  default_max_chars: 12000
+
+runtime:
+  continue_on_error: true
