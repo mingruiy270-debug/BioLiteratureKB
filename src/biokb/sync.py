@@ -72,6 +72,11 @@ def _process_paper(
         and _sha256(kb_pdf) == state.pdf_sha256
         and idx.has_paper(rec.paper_id)  # 索引缺失（如 db 重建）→ 不跳过，自愈重索引
     ):
+        if digest_ok and state.status == "md_ready":
+            # digest 已存在（如手动生成）但状态未升级 → 补升级
+            state.status = "digest_ready"
+            registry.set_state(state)
+            registry.save()
         report.markdown["skipped"] += 1
         report.digest["skipped"] += 1
         log_build(cfg.build_log_file, rec.paper_id, "sync", "SKIP", "")
@@ -242,6 +247,14 @@ def run_sync(cfg: Config, refresh_inventory: bool = False) -> SyncReport:
                     break
     finally:
         idx.close()
+
+    # 清理 failed.json 中已恢复的陈旧条目（仅保留仍处失败态的论文）
+    from .state import load_failed
+
+    stale = [f for f in load_failed(cfg.failed_file) if registry.get_state(f["paper_id"]) and registry.get_state(f["paper_id"]).status not in ("failed", "missing", "ambiguous")]
+    if stale:
+        kept = [f for f in load_failed(cfg.failed_file) if f not in stale]
+        cfg.failed_file.write_text(json.dumps(kept, ensure_ascii=False, indent=1), encoding="utf-8")
 
     state = load_state(cfg.state_file)
     state["last_sync"] = now_iso()
