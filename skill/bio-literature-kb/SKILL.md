@@ -1,6 +1,6 @@
 ---
 name: bio-literature-kb
-description: Use the user's local biomedical literature knowledge base to support bioinformatics, multi-omics, machine-learning, single-cell, dry-wet integrated and research-design tasks without loading the full paper library into context.
+description: Use the user's local biomedical literature knowledge base to support bioinformatics, multi-omics, machine-learning, single-cell, dry-wet integrated and research-design tasks without loading the full paper library into context. Learn transferable methods from papers across diseases and topics, not just the user's own field.
 ---
 
 # BioLiteratureKB
@@ -43,6 +43,18 @@ Environment self-check:
 
 All commands support `--json` for machine-readable output.
 
+## Cross-topic learning principle
+
+Do not restrict retrieval to papers on the user's disease, tissue, or species. The library's value lies in transferable methodology: frontier analysis strategies, experimental designs, and evidence-chain structures often come from other diseases and other topics.
+
+Read across the library to learn how to combine high-quality patterns with the user's specific project, and to elevate the user's research design:
+
+- the user's own field papers → direct benchmarks and gaps;
+- other-disease / other-tissue papers → methodological patterns to transplant;
+- frontier multi-omics / ML / spatial / perturbation papers → what is now possible.
+
+Judge each paper by methodological transferability, not by topic similarity.
+
 ## Workflow
 
 When the user asks you to improve or design a research workflow:
@@ -57,9 +69,9 @@ When the user asks you to improve or design a research workflow:
    - experimental constraints,
    - time and computational constraints.
 
-2. Decide what literature questions need to be answered.
+2. Decide what literature questions need to be answered — both topic-specific questions and cross-topic method-pattern questions.
 
-3. Generate several focused KB queries.
+3. Generate several focused KB queries (mix disease-relevant and method-pattern queries).
 
 4. Use `biokb search`.
 
