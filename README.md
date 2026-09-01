@@ -5,7 +5,7 @@
 
 **Zotero → 本地 PDF → 高质量 Markdown → 深度 Paper Digest → 全文索引 → Progressive Retrieval → Codex / Claude Code Skill**
 
-一个长期可维护的本地科研文献记忆系统。核心目标：让高能力 Agent（Codex / Claude Code）在极低 Context 成本下，按需使用你积累的前沿论文，完成真正的项目特异性科研推理。
+一个长期可维护的本地科研文献记忆系统。核心目标：让高能力 Agent（Codex / Claude Code）在极低 Context 成本下，按需使用你积累的前沿论文，完成科研全流程（选题 → 设计 → 分析 → 干湿整合 → 写作 → 修改/审稿 → 汇报）的项目特异性工作。
 
 ```
 几百篇论文
@@ -16,14 +16,15 @@
   ↓
 深入 1–3 篇原文片段    biokb excerpt
   ↓
-Agent 自身完成跨论文比较、方法取舍、科研设计
+Agent 自身完成跨论文比较、方法取舍、设计决策、稿件撰写
 ```
 
 ## 定位
 
-- **不是** 生信方案设计器 —— 不替用户选择方法、不做创新评分、不生成 Method Playbook。
+- **覆盖科研全流程**：选题、研究设计、数据分析（生信/多组学/ML/单细胞/空间/扰动）、干湿整合、论文写作、修改/审稿、汇报——任何科研相关任务都可调用。
 - **负责** 同步、保存、解析、深度单篇精读、压缩、索引、精准取回。
-- Digest 足够聪明地读懂论文，但**不替未来 Agent 做项目决策**。
+- **不替 Agent 做决策**：Digest 足够聪明地读懂论文，但方法取舍、创新判断、设计决策、稿件撰写等推理责任始终在运行时 Agent。
+- **不限制主题**：跨疾病、跨物种、跨主题的前沿论文都是方法学与写作模式的学习来源。
 
 ## 快速开始（git clone 即用）
 
@@ -79,7 +80,7 @@ biokb search-fulltext "<query>"       # 跨库原文段落
 
 ## Agent Skill
 
-仓库内置 `skill/bio-literature-kb/SKILL.md`。安装到 Claude Code / Codex 后，Agent 会在科研设计类任务中自动按 `search → digest → excerpt → 原文 → PDF` 的渐进检索顺序调用知识库，绝不批量加载文献。
+仓库内置 `skill/bio-literature-kb/SKILL.md`。安装到 Claude Code / Codex 后，Agent 会在科研全流程任务（选题、设计、分析、干湿整合、写作、修改/审稿、汇报）中自动按 `search → digest → excerpt → 原文 → PDF` 的渐进检索顺序调用知识库，从不同疾病与主题的前沿论文中学习方法学与写作模式，绝不批量加载文献。
 
 **Claude Code**（Windows PowerShell）：
 
