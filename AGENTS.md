@@ -2,7 +2,7 @@
 
 This repository provides a local biomedical literature knowledge base (`biokb` CLI).
 
-When research-design, bioinformatics, multi-omics, ML/DL, single-cell or dry-wet integration tasks would benefit from the user's curated literature:
+When any science-related task — topic selection, study design, bioinformatics, multi-omics, ML/DL, single-cell, dry-wet integration, paper writing, revision, review — would benefit from the user's curated literature:
 
 1. Use `biokb search "<query>"` to find candidate papers (short results only).
 2. Read Paper Digests with `biokb digest <paper_id>` (paper_id or citekey).

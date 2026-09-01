@@ -2,7 +2,7 @@
 
 A local biomedical literature knowledge base is available through the `biokb` CLI.
 
-For research design, bioinformatics, multi-omics, ML/DL, single-cell and dry-wet integration tasks, use the BioLiteratureKB skill when local literature could materially improve the answer.
+For any science-related task — topic selection, study design, bioinformatics, multi-omics, ML/DL, single-cell, dry-wet integration, paper writing, revision, review — use the BioLiteratureKB skill when local literature could materially improve the answer.
 
 Do not bulk-load raw papers.
 
