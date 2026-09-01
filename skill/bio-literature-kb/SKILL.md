@@ -58,6 +58,8 @@ Environment self-check:
 
 All commands support `--json` for machine-readable output.
 
+The number of papers to search, digest, or excerpt is your choice — decide it per task (how many candidates the question needs, how much depth the decision requires), not by a fixed cap. `--top N` is adjustable in every search command.
+
 ## Cross-topic learning principle
 
 Do not restrict retrieval to papers on the user's disease, tissue, or species. The library's value lies in transferable methodology: frontier analysis strategies, experimental designs, evidence-chain structures, and writing patterns often come from other diseases and other topics.

@@ -10,14 +10,16 @@
 ```
 几百篇论文
   ↓
-搜索 10–20 篇        biokb search
+搜索候选论文          biokb search
   ↓
-精读 3–8 篇 Digest    biokb digest
+精读相关 Digest        biokb digest
   ↓
-深入 1–3 篇原文片段    biokb excerpt
+深入原文片段          biokb excerpt
   ↓
-Agent 自身完成跨论文比较、方法取舍、设计决策、稿件撰写
+Agent 自行完成跨论文比较、方法取舍、设计决策、稿件撰写
 ```
+
+检索与精读的数量**由 Agent 按任务需要自行决定**（`--top N` 可调），不受固定上限约束。
 
 ## 定位
 
