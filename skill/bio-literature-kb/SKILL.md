@@ -34,7 +34,7 @@ Run `biokb doctor` to verify the environment.
 
 Search candidate papers:
 
-`biokb search "<query>" --top 10`
+`biokb search "<query>"`
 
 Read a deep structured paper digest:
 
@@ -42,11 +42,11 @@ Read a deep structured paper digest:
 
 Retrieve targeted passages from one paper:
 
-`biokb excerpt <paper_id> "<query>" --top 5`
+`biokb excerpt <paper_id> "<query>"`
 
 Search targeted passages across the whole library:
 
-`biokb search-fulltext "<query>" --top 10`
+`biokb search-fulltext "<query>"`
 
 Check library status:
 
