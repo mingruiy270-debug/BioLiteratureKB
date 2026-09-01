@@ -6,6 +6,8 @@ For any science-related task — topic selection, study design, bioinformatics, 
 
 Do not bulk-load raw papers.
 
+Web search is allowed and encouraged: the library is not omniscient, and the agent should supplement local retrieval with web evidence when the library lacks coverage.
+
 Use:
 
 `search → digest → excerpt`

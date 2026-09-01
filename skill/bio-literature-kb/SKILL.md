@@ -1,6 +1,6 @@
 ---
 name: bio-literature-kb
-description: Use the user's local biomedical literature knowledge base to support any scientific-research task — topic selection, study design, bioinformatics analysis, dry-wet integration, paper writing, revision, review, presentation, and more — without loading the full paper library into context. Learn transferable methods and writing patterns from papers across diseases and topics, not just the user's own field.
+description: Use the user's local biomedical literature knowledge base to support any scientific-research task — topic selection, study design, bioinformatics analysis, dry-wet integration, paper writing, revision, review, presentation, and more — without loading the full paper library into context. Learn transferable methods and writing patterns from papers across diseases and topics, not just the user's own field. Web search is allowed and encouraged to supplement the library's coverage.
 ---
 
 # BioLiteratureKB
@@ -113,9 +113,9 @@ When the user asks for scientific help:
     - whether a better alternative exists,
     - for writing tasks: whether a phrasing or structure fits the current manuscript.
 
-## Web access
+## Web access (enabled by default)
 
-When the user permits web access, combine local and web evidence.
+Web access is allowed while using this skill. The library is not omniscient: it only contains the papers the user has curated, and it lags behind the frontier. When local retrieval cannot answer the question, actively search the web for supplementary information rather than stopping at the library's boundaries.
 
 Use the local KB for:
 - the user's curated literature,
@@ -128,9 +128,10 @@ Use the web for:
 - current software versions,
 - recent documentation,
 - newly available datasets,
-- external verification.
+- external verification,
+- anything the library does not cover.
 
-Do not automatically privilege either source.
+Combine both sources and weigh them by relevance and recency. Do not automatically privilege either source, and do not treat the library's silence as evidence of absence.
 
 ## Reasoning responsibility
 
