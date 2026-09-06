@@ -23,6 +23,9 @@ biokb excerpt <paper_id> "CellChat"   # 单篇原文精准段落
 biokb search-fulltext "<query>"       # 跨库原文段落
 biokb status                          # 状态总览
 biokb sync                            # 增量同步
+biokb digest-prompt list              # prompt 版本（项目定制：create/use/test）
 ```
+
+项目定制 digest prompt 仅在首次设置 skill 或用户明确要求时进行（见 SKILL.md）。
 
 See `skill/bio-literature-kb/SKILL.md` for the full workflow, and `README.md` for system details.

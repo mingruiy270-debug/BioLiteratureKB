@@ -113,6 +113,28 @@ When the user asks for scientific help:
     - whether a better alternative exists,
     - for writing tasks: whether a phrasing or structure fits the current manuscript.
 
+## Project-specific digest prompts (first use or on request)
+
+Paper Digests follow a versioned prompt (`prompts/paper_digest_v1.md` by default). A prompt can be customized for the user's research project so that every paper is read with the project's questions, axes, and terminology in mind.
+
+This is a **one-time or rare setup step** — do it only when:
+
+- this skill is being set up for the user for the first time, and the user provides project documents (study design, analysis summaries, wet-lab results, project notes), or
+- the user explicitly asks to change the digest prompt.
+
+Do not propose customization during ordinary retrieval tasks.
+
+Workflow:
+
+1. Read the project documents the user points to (design file, summaries, CLAUDE.md, etc.) and identify what the project cares about: background, core scientific questions, mechanism axes, cell types, data types, method families, terminology, statistical conventions.
+2. Run `biokb digest-prompt create <name>` to derive a new prompt from the active version.
+3. Edit `prompts/paper_digest_<name>.md`: add a `## 项目聚焦` (Project focus) section listing those items — telling the reader which content to extract in more detail and which terminology to prefer.
+4. Show the user the draft before anything else happens.
+5. Run `biokb digest-prompt test <paper_id> --version <name>` to regenerate one paper as a preview (`*.preview.md`, never overwrites the real digest), and let the user check quality.
+6. If the user approves, run `biokb digest-prompt use <name>` and run `biokb sync` (all papers are re-read with the new prompt — warn the user about the time and cost first).
+
+Customization may change extraction depth, emphasis, and vocabulary — it must never relax the fact discipline: `not_reported` / `unclear` / `null`, no fabrication, no claiming predictions as causation, and no project advice inside a single-paper digest.
+
 ## Web access (enabled by default)
 
 Web access is allowed while using this skill. The library is not omniscient: it only contains the papers the user has curated, and it lags behind the frontier. When local retrieval cannot answer the question, actively search the web for supplementary information rather than stopping at the library's boundaries.

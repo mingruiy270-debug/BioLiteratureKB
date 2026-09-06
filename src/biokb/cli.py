@@ -18,6 +18,7 @@ from rich.table import Table
 
 from .config import Config, get_config
 from .converter import detect_parsers
+from .digest_prompt import activate_prompt, create_prompt, list_prompts, preview_digest
 from .indexer import Indexer
 from .llm_client import LLMClient
 from .pdf_inventory import load_inventory
@@ -28,6 +29,8 @@ from .sync import run_sync
 from .zotero import parse_all
 
 app = typer.Typer(add_completion=False, help="BioLiteratureKB — 本地生物医学文献知识库")
+app_group = typer.Typer(help="Digest prompt 版本管理（项目定制）", no_args_is_help=True)
+app.add_typer(app_group, name="digest-prompt")
 console = Console()
 
 
@@ -123,6 +126,80 @@ def status(root: Optional[str] = typer.Option(None, "--root")):
     state = load_state(cfg.state_file)
     if state.get("last_sync"):
         console.print(f"[dim]last sync: {state['last_sync']}[/dim]")
+
+
+@app_group.command("list")
+def dp_list(root: Optional[str] = typer.Option(None, "--root")):
+    """列出所有 digest prompt 版本。"""
+    cfg = _cfg(root)
+    items = list_prompts(cfg)
+    tbl = Table(title=f"digest prompts (active: {cfg.digest_version})")
+    tbl.add_column("version")
+    tbl.add_column("active")
+    tbl.add_column("customized")
+    tbl.add_column("size(KB)")
+    for it in items:
+        flag = "✓" if it["active"] else ""
+        tbl.add_row(it["name"], flag, "✓" if it["customized"] else "", str(it["size_kb"]))
+    console.print(tbl)
+
+
+@app_group.command("create")
+def dp_create(
+    name: str,
+    from_version: Optional[str] = typer.Option(None, "--from", help="源版本（默认当前激活版本）"),
+    root: Optional[str] = typer.Option(None, "--root"),
+):
+    """从当前版本派生新的定制 prompt。"""
+    cfg = _cfg(root)
+    try:
+        dst = create_prompt(cfg, name, from_version)
+    except (ValueError, FileNotFoundError, FileExistsError) as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    console.print(f"[green]已创建: {dst}[/green]")
+    console.print("编辑该文件并注入「## 项目聚焦」段落（项目背景 / 核心问题 / 关注轴与方法 / 术语偏好）。")
+    console.print("定制只影响详略与聚焦，不得放宽事实纪律（not_reported / 不编造 / 不写项目建议）。")
+    console.print("完成后: biokb digest-prompt test <paper_id> --version <name>   # 单篇试跑")
+
+
+@app_group.command("use")
+def dp_use(
+    name: str,
+    root: Optional[str] = typer.Option(None, "--root"),
+):
+    """激活指定版本为当前 digest prompt（运行 sync 后全库按新版本重读）。"""
+    cfg = _cfg(root)
+    try:
+        activate_prompt(cfg, name)
+    except (ValueError, FileNotFoundError) as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    console.print(f"[green]digest.version = {name}[/green]")
+    console.print("下次运行 biokb sync 将按 digest_version 变化重做全部 Digest（每篇约 5-7 分钟）。")
+    console.print("建议先 biokb digest-prompt test <paper_id> --version <name> 试跑一篇确认质量。")
+
+
+@app_group.command("test")
+def dp_test(
+    paper: str,
+    version: Optional[str] = typer.Option(None, "--version", help="试跑的 prompt 版本（默认当前激活版本）"),
+    root: Optional[str] = typer.Option(None, "--root"),
+):
+    """用指定 prompt 版本单篇重做 digest 预览（写入 *.preview.md，不污染正式产物）。"""
+    cfg = _cfg(root)
+    if not cfg.llm_configured():
+        console.print("[red]LLM 未配置，无法生成 Digest[/red]")
+        raise typer.Exit(1)
+    client = LLMClient(cfg)
+    try:
+        out = preview_digest(cfg, client, paper, version)
+    except (LookupError, FileNotFoundError, RuntimeError) as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    size = out.stat().st_size
+    console.print(f"[green]预览已写入: {out} ({size/1024:.1f} KB)[/green]")
+    console.print("检查质量后：满意 → biokb digest-prompt use <version>；不满意 → 直接编辑 prompt 后重跑本命令。")
 
 
 @app.command("sync")

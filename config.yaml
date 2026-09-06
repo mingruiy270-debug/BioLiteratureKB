@@ -27,6 +27,8 @@ markdown:
 digest:
   output_dir: "paper_digests"
   record_dir: "records"
+  # version 对应 prompts/paper_digest_<version>.md；
+  # 项目定制 prompt 用 `biokb digest-prompt create/use/test` 管理（会更新此字段）
   version: "v1"
   max_chars_per_call: 400000   # 1M 上下文下整篇精读；仅超长输入才分段合成
 

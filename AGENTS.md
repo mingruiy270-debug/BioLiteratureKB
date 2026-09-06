@@ -9,6 +9,8 @@ When any science-related task — topic selection, study design, bioinformatics,
 3. Retrieve exact passages with `biokb excerpt <paper_id> "<query>"`.
 4. Search across all papers with `biokb search-fulltext "<query>"`.
 
+Paper Digests are produced by a versioned prompt. Project-specific custom prompts exist only when the user sets them up on first use or explicitly asks (manage via `biokb digest-prompt create/use/test`); ordinary tasks use the active version as-is.
+
 Never bulk-load the paper library. Web search is allowed and encouraged to supplement the library's coverage (the library is not omniscient). Do the scientific reasoning yourself at runtime.
 
 Details: `skill/bio-literature-kb/SKILL.md` (behavior rules), `README.md` (system internals).
