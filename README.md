@@ -76,9 +76,25 @@ biokb search "<query>" [--top N]      # 跨库检索候选论文（论文级短�
 biokb digest <paper_id>               # 深度精读（支持 citekey 别名）
 biokb excerpt <paper_id> "<query>"    # 单篇原文精准段落
 biokb search-fulltext "<query>"       # 跨库原文段落
+biokb digest-prompt list              # digest prompt 版本列表
+biokb digest-prompt test <paper>      # 用某版本 prompt 单篇试跑（.preview.md）
 ```
 
 所有检索命令支持 `--json`（供 Agent 解析）与 `--top`。
+
+## 项目定制 Digest Prompt
+
+每篇论文的 Digest 由版本化的精读提示词（`prompts/paper_digest_<version>.md`）驱动。你可以基于项目文档（研究设计、分析总结、湿实验结果）**个性化定制**该提示词，让每一篇精读都按你项目的科学问题、关注轴与术语进行有重点的提取：
+
+```bash
+biokb digest-prompt create my-project   # 从当前版本派生定制版（注入「## 项目聚焦」段）
+biokb digest-prompt test <paper_id> --version my-project   # 单篇试跑验收
+biokb digest-prompt use my-project      # 激活 → biokb sync 全库按新提示词重读
+```
+
+- **何时启用**：仅首次设置 skill 且你提供项目文档时，或你明确要求修改时（一次性设置，非日常流程）
+- **可定制**：提取详略、关注维度、术语偏好
+- **不可放宽**：事实纪律（`not_reported`/`unclear`/`null`、不编造、预测≠因果、Digest 内不做项目建议）
 
 ## Agent Skill
 
@@ -104,7 +120,7 @@ Copy-Item "skill\bio-literature-kb\SKILL.md" "$env:USERPROFILE\.claude\skills\bi
 ├── records/                    # {citekey}.json 结构化 Record（git 忽略）
 ├── index/knowledge_base.sqlite # FTS5 全文索引（git 忽略）
 ├── system/                     # 状态 / registry / inventory / 日志（git 忽略）
-├── prompts/paper_digest_v1.md  # 精读提示词（版本化，可自定义）
+├── prompts/paper_digest_v1.md  # 精读提示词（版本化；digest-prompt 派生定制版）
 ├── src/biokb/                  # 核心包
 ├── skill/bio-literature-kb/    # Agent 行为规则
 ├── tests/                      # 测试套件
