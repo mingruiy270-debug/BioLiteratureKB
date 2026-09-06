@@ -1,6 +1,6 @@
 # BioLiteratureKB
 
-This repository provides a local biomedical literature knowledge base (`biokb` CLI).
+This repository provides a local research literature knowledge base (`biokb` CLI) — biomedicine out of the box, any other domain (deep learning, machine learning, etc.) via a customized digest prompt.
 
 When any science-related task — topic selection, study design, bioinformatics, multi-omics, ML/DL, single-cell, dry-wet integration, paper writing, revision, review — would benefit from the user's curated literature:
 

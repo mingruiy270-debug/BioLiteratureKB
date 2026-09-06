@@ -1,6 +1,6 @@
 # Local BioLiteratureKB
 
-A local biomedical literature knowledge base is available through the `biokb` CLI.
+A local research literature knowledge base is available through the `biokb` CLI. Biomedicine works out of the box; any other domain (deep learning, machine learning, etc.) is supported by customizing the digest prompt (see below).
 
 For any science-related task — topic selection, study design, bioinformatics, multi-omics, ML/DL, single-cell, dry-wet integration, paper writing, revision, review — use the BioLiteratureKB skill when local literature could materially improve the answer.
 

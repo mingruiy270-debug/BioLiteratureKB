@@ -1,6 +1,6 @@
 ---
 name: bio-literature-kb
-description: Use the user's local biomedical literature knowledge base to support any scientific-research task — topic selection, study design, bioinformatics analysis, dry-wet integration, paper writing, revision, review, presentation, and more — without loading the full paper library into context. Learn transferable methods and writing patterns from papers across diseases and topics, not just the user's own field. Web search is allowed and encouraged to supplement the library's coverage.
+description: Use the user's local research literature knowledge base to support any-domain scientific-research task — topic selection, study design, analysis, paper writing, revision, review, presentation, and more — without loading the full paper library into context. Biomedicine works out of the box; any other domain (deep learning, machine learning, etc.) is supported via a project-specific digest prompt. Learn transferable methods and writing patterns across topics and fields. Web search is allowed and encouraged to supplement the library's coverage.
 ---
 
 # BioLiteratureKB
@@ -15,12 +15,14 @@ Use the KB for any science-related task, not just analysis design:
 
 - **Topic selection**: identify gaps, frontier directions, and what is now possible.
 - **Study design**: analysis strategy, experimental design, evidence-chain structure.
-- **Analysis**: bioinformatics, multi-omics, ML, single-cell, spatial, perturbation.
-- **Dry-wet integration**: bridge computational findings to wet-lab validation.
+- **Analysis**: bioinformatics, multi-omics, ML, single-cell, spatial, perturbation — or, in other domains, modeling, training, evaluation, benchmarking.
+- **Dry-wet integration**: bridge computational findings to experimental validation.
 - **Paper writing**: Introduction framing, Methods wording and structure, Results narrative, Discussion logic, figure organization, limitations and caveats — learn how high-quality papers in the library phrase and structure these.
 - **Revision / review**: compare claims against the literature, find counter-evidence, anticipate reviewer questions.
 - **Presentation**: background, take-home messages, evidence summaries.
 - Anything else science-related.
+
+The pipeline is domain-agnostic: the default digest prompt targets biomedicine, and a customized prompt (see below) adapts extraction depth and vocabulary to any field — deep learning, machine learning, computer vision, NLP, materials, etc.
 
 Do not assume the task is analysis-only. If the user is writing or revising text about their research, retrieve papers to learn how the field phrases, structures, and justifies comparable claims.
 
@@ -124,9 +126,11 @@ This is a **one-time or rare setup step** — do it only when:
 
 Do not propose customization during ordinary retrieval tasks.
 
-Workflow:
+This customization is also how the KB adapts to domains beyond biomedicine: the project focus section simply carries the target field's vocabulary and reading priorities (e.g., for deep learning / ML papers: architecture, dataset and benchmark, training strategy, ablations, metrics, reproducibility).
 
-1. Read the project documents the user points to (design file, summaries, CLAUDE.md, etc.) and identify what the project cares about: background, core scientific questions, mechanism axes, cell types, data types, method families, terminology, statistical conventions.
+Workflow (may be executed autonomously by the agent, with the user only providing documents and doing final acceptance):
+
+1. Read the project documents the user points to (design file, summaries, CLAUDE.md, etc.) and identify what the project cares about: background, core questions, domain terms, method families, reading priorities, conventions.
 2. Run `biokb digest-prompt create <name>` to derive a new prompt from the active version.
 3. Edit `prompts/paper_digest_<name>.md`: add a `## 项目聚焦` (Project focus) section listing those items — telling the reader which content to extract in more detail and which terminology to prefer.
 4. Show the user the draft before anything else happens.
