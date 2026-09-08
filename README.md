@@ -95,7 +95,7 @@ BIOKB_CONCURRENCY=12 biokb sync       # 环境变量覆盖
 ```yaml
 # config.yaml
 digest:
-  concurrency: 15     # 默认 15；官方并发上限 20，建议 10–15 留余量
+  concurrency: 10     # 默认 10；官方并发上限 20
 ```
 
 - **并行范围**：只并行纯 LLM 调用；PDF 解析、状态写入、索引建库仍在主线程串行，保证数据一致

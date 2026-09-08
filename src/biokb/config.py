@@ -113,10 +113,10 @@ class Config:
         env_conc = os.environ.get("BIOKB_CONCURRENCY", "").strip()
         try:
             self.concurrency = max(1, int(env_conc)) if env_conc else max(
-                1, int(raw.get("digest", {}).get("concurrency", 4))
+                1, int(raw.get("digest", {}).get("concurrency", 10))
             )
         except ValueError:
-            self.concurrency = 4
+            self.concurrency = 10
         self.max_chars_per_call = int(
             raw.get("digest", {}).get("max_chars_per_call", 400000)
         )

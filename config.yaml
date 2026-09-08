@@ -30,9 +30,9 @@ digest:
   # version 对应 prompts/paper_digest_<version>.md；
   # 项目定制 prompt 用 `biokb digest-prompt create/use/test` 管理（会更新此字段）
   version: "v1"
-  # digest 并发数（LLM 调用并行）。官方并发上限 20，建议 10–15 留余量。
+  # digest 并发数（LLM 调用并行）。官方并发上限 20，默认 10。
   # 也可用 biokb sync --concurrency N 或环境变量 BIOKB_CONCURRENCY 覆盖
-  concurrency: 15
+  concurrency: 10
   max_chars_per_call: 400000   # 1M 上下文下整篇精读；仅超长输入才分段合成
 
 llm:
