@@ -109,6 +109,14 @@ class Config:
         self.digest_output_dir = self._p(raw, "digest", "output_dir", "paper_digests")
         self.record_dir = self._p(raw, "digest", "record_dir", "records")
         self.digest_version = raw.get("digest", {}).get("version", "v1")
+        # digest 并发数：config digest.concurrency，可用 BIOKB_CONCURRENCY 环境变量覆盖
+        env_conc = os.environ.get("BIOKB_CONCURRENCY", "").strip()
+        try:
+            self.concurrency = max(1, int(env_conc)) if env_conc else max(
+                1, int(raw.get("digest", {}).get("concurrency", 4))
+            )
+        except ValueError:
+            self.concurrency = 4
         self.max_chars_per_call = int(
             raw.get("digest", {}).get("max_chars_per_call", 400000)
         )

@@ -1,12 +1,17 @@
-"""同步管线：Zotero JSON → Registry → Inventory → PDF 解析 → 复制 → Markdown → Digest → Index。"""
+"""同步管线：Zotero JSON → Registry → Inventory → PDF 解析 → 复制 → Markdown → Digest → Index。
+
+Digest 的 LLM 调用支持并发（config digest.concurrency / --concurrency）；
+共享状态（registry / SQLite 索引 / report）只在主线程写，保证线程安全。
+"""
 from __future__ import annotations
 
 import hashlib
 import json
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .config import Config
 from .converter import add_frontmatter, convert_pdf, detect_parsers
@@ -46,9 +51,22 @@ def _record_key(rec: PaperRecord) -> str:
     return rec.citekey or rec.paper_id
 
 
-def _process_paper(
+@dataclass
+class _Prepared:
+    """一篇论文完成 PDF→Markdown 后的中间态（digest 待生成）。"""
+
+    rec: PaperRecord
+    key: str
+    md_text: str
+    digest_path: Path
+    state: PaperState
+    needs_digest: bool = False
+
+
+def _prepare_paper(
     cfg: Config, registry: Registry, idx: Indexer, client: LLMClient, rec: PaperRecord, inventory: List, report: SyncReport
-) -> None:
+) -> Optional[_Prepared]:
+    """PDF 解析 → Markdown → QC → frontmatter；返回待 digest 的中间态，跳过/失败返回 None。"""
     key = _record_key(rec)
     state = registry.get_state(rec.paper_id) or PaperState(paper_id=rec.paper_id)
     # JSON 重新解析的记录无 attachment → 合并 registry 中已保存的 PDF 路径
@@ -80,7 +98,7 @@ def _process_paper(
         report.markdown["skipped"] += 1
         report.digest["skipped"] += 1
         log_build(cfg.build_log_file, rec.paper_id, "sync", "SKIP", "")
-        return
+        return None
 
     # ---- PDF 解析与复制 ----
     path, status, _ = resolve_pdf(rec, inventory, cfg.zotero_storage_root)
@@ -92,7 +110,7 @@ def _process_paper(
         if status == "ambiguous":
             append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="pdf", error="PDF_AMBIGUOUS", time=now_iso()))
         log_build(cfg.build_log_file, rec.paper_id, "pdf", status.upper(), "")
-        return
+        return None
     src = Path(path)
     dst = cfg.pdf_output_dir / f"{key}.pdf"
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -116,7 +134,7 @@ def _process_paper(
             registry.save()
             append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="markdown", error="convert failed", time=now_iso()))
             log_build(cfg.build_log_file, rec.paper_id, "markdown", "FAILED", parser_used or "no parser")
-            return
+            return None
         state.parser = parser_used
         report.markdown["ok"] += 1
         log_build(cfg.build_log_file, rec.paper_id, "markdown", "OK", parser_used)
@@ -132,48 +150,63 @@ def _process_paper(
         registry.save()
         append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="qc", error=f"qc_fail:{reason}", time=now_iso()))
         log_build(cfg.build_log_file, rec.paper_id, "qc", "FAILED", reason)
-        return
+        return None
     add_frontmatter(md_path, {
         "paper_id": rec.paper_id, "citekey": rec.citekey, "title": rec.title, "doi": rec.doi,
         "year": rec.year, "journal": rec.journal, "source_pdf": src.name, "parser": state.parser,
     })
     state.status = "md_ready"
 
-    # ---- Digest（仅在版本变化或缺失时） ----
+    # ---- Digest 决策（生成在 _finalize_paper，可并发） ----
     if state.digest_version != cfg.digest_version or not digest_ok:
         if state.digest_pending and llm_off:
             # 已标记 pending 且 LLM 仍不可用：不重复尝试
             report.digest["pending"] += 1
+            return _Prepared(rec, key, md_text, digest_path, state, needs_digest=False)
+        return _Prepared(rec, key, md_text, digest_path, state, needs_digest=True)
+    report.digest["skipped"] += 1
+    state.status = "digest_ready"
+    return _Prepared(rec, key, md_text, digest_path, state, needs_digest=False)
+
+
+def _generate_job(client: LLMClient, cfg: Config, prepared: _Prepared) -> Tuple[Optional[str], Optional[dict], str]:
+    """纯 LLM 调用（无共享状态），供线程池并发执行。"""
+    return generate_digest_and_record(client, cfg, prepared.rec, prepared.md_text)
+
+
+def _finalize_paper(
+    cfg: Config, registry: Registry, idx: Indexer, prepared: _Prepared,
+    digest_result: Optional[Tuple[Optional[str], Optional[dict], str]], report: SyncReport,
+) -> None:
+    """写回 digest / 更新状态 / 建索引（仅主线程调用）。"""
+    rec, key, md_text, digest_path, state = prepared.rec, prepared.key, prepared.md_text, prepared.digest_path, prepared.state
+    if digest_result is not None:
+        digest_md, record, dstatus = digest_result
+        if dstatus == "ready" and digest_md and record:
+            write_digest(cfg, rec, digest_md, record)
+            state.digest_version = cfg.digest_version
+            state.digest_pending = False
+            state.status = "digest_ready"
+            report.digest["ready"] += 1
+            log_build(cfg.build_log_file, rec.paper_id, "digest", "OK", "")
+        elif dstatus == "pending":
+            state.status = "md_ready"
+            state.digest_version = cfg.digest_version
+            state.digest_pending = True
+            report.digest["pending"] += 1
+            log_build(cfg.build_log_file, rec.paper_id, "digest", "PENDING", "LLM not configured")
         else:
-            digest_md, record, dstatus = generate_digest_and_record(client, cfg, rec, md_text)
-            if dstatus == "ready" and digest_md and record:
-                write_digest(cfg, rec, digest_md, record)
-                state.digest_version = cfg.digest_version
-                state.digest_pending = False
-                state.status = "digest_ready"
-                report.digest["ready"] += 1
-                log_build(cfg.build_log_file, rec.paper_id, "digest", "OK", "")
-            elif dstatus == "pending":
-                state.status = "md_ready"
-                state.digest_version = cfg.digest_version
-                state.digest_pending = True
-                report.digest["pending"] += 1
-                log_build(cfg.build_log_file, rec.paper_id, "digest", "PENDING", "LLM not configured")
-            else:
-                state.status = "md_ready"
-                state.digest_pending = False
-                report.digest["failed"] += 1
-                append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="digest", error="llm failed", time=now_iso()))
-                log_build(cfg.build_log_file, rec.paper_id, "digest", "FAILED", "")
-    else:
-        report.digest["skipped"] += 1
-        state.status = "digest_ready"
+            state.status = "md_ready"
+            state.digest_pending = False
+            report.digest["failed"] += 1
+            append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="digest", error="llm failed", time=now_iso()))
+            log_build(cfg.build_log_file, rec.paper_id, "digest", "FAILED", "")
 
     # ---- Index ----
     state.updated_at = now_iso()
     digest_text = ""
     keywords = data_types = methods = ""
-    if digest_ok or digest_path.exists():
+    if digest_path.exists():
         digest_text = digest_path.read_text(encoding="utf-8", errors="replace")
     record_file = cfg.record_dir / f"{key}.json"
     if record_file.exists():
@@ -192,6 +225,17 @@ def _process_paper(
     registry.set_state(state)
     registry.save()
     log_build(cfg.build_log_file, rec.paper_id, "index", "OK", f"sections={n_sec}")
+
+
+def _process_paper(
+    cfg: Config, registry: Registry, idx: Indexer, client: LLMClient, rec: PaperRecord, inventory: List, report: SyncReport
+) -> None:
+    """单篇串行处理（prepare → digest → finalize）；并发路径见 run_sync。"""
+    prepared = _prepare_paper(cfg, registry, idx, client, rec, inventory, report)
+    if prepared is None:
+        return
+    result = _generate_job(client, cfg, prepared) if prepared.needs_digest else None
+    _finalize_paper(cfg, registry, idx, prepared, result, report)
 
 
 def run_sync(cfg: Config, refresh_inventory: bool = False) -> SyncReport:
@@ -236,13 +280,55 @@ def run_sync(cfg: Config, refresh_inventory: bool = False) -> SyncReport:
     log_build(cfg.build_log_file, "*", "sync", "START", f"parsers={parsers} llm={'SET' if client.configured() else 'MISSING'}")
 
     try:
+        # ---- 阶段 1（主线程串行）：PDF → Markdown，收集待 digest 任务 ----
+        prepared_list: List[_Prepared] = []
         for rec in records:
             try:
-                _process_paper(cfg, registry, idx, client, rec, entries, report)
+                p = _prepare_paper(cfg, registry, idx, client, rec, entries, report)
+                if p is not None:
+                    prepared_list.append(p)
             except Exception as e:  # noqa: BLE001
                 report.failed.append(FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="pipeline", error=str(e)[:300], time=now_iso()))
                 append_failed(cfg.failed_file, FailedEntry(paper_id=rec.paper_id, citekey=rec.citekey, stage="pipeline", error=str(e)[:300], time=now_iso()))
                 log_build(cfg.build_log_file, rec.paper_id, "pipeline", "ERROR", str(e)[:200])
+                if not cfg.continue_on_error:
+                    break
+
+        # ---- 阶段 2：digest 生成（可并发；纯 LLM 调用，无共享状态） ----
+        jobs = [p for p in prepared_list if p.needs_digest]
+        results: Dict[str, Tuple[Optional[str], Optional[dict], str]] = {}
+        workers = max(1, int(cfg.concurrency))
+        if jobs:
+            if workers > 1:
+                log_build(cfg.build_log_file, "*", "digest", "PARALLEL", f"workers={workers} jobs={len(jobs)}")
+                done = 0
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    fut_map = {ex.submit(_generate_job, client, cfg, p): p for p in jobs}
+                    for fut in as_completed(fut_map):
+                        p = fut_map[fut]
+                        done += 1
+                        try:
+                            results[p.rec.paper_id] = fut.result()
+                            log_build(cfg.build_log_file, p.rec.paper_id, "digest", "PROGRESS", f"{done}/{len(jobs)}")
+                        except Exception as e:  # noqa: BLE001
+                            results[p.rec.paper_id] = (None, None, "failed")
+                            log_build(cfg.build_log_file, p.rec.paper_id, "digest", "ERROR", f"{done}/{len(jobs)} {str(e)[:150]}")
+            else:
+                for p in jobs:
+                    try:
+                        results[p.rec.paper_id] = _generate_job(client, cfg, p)
+                    except Exception as e:  # noqa: BLE001
+                        results[p.rec.paper_id] = (None, None, "failed")
+                        log_build(cfg.build_log_file, p.rec.paper_id, "digest", "ERROR", str(e)[:150])
+
+        # ---- 阶段 3（主线程串行）：写回 digest / 状态 / 索引 ----
+        for p in prepared_list:
+            try:
+                _finalize_paper(cfg, registry, idx, p, results.get(p.rec.paper_id), report)
+            except Exception as e:  # noqa: BLE001
+                report.failed.append(FailedEntry(paper_id=p.rec.paper_id, citekey=p.rec.citekey, stage="pipeline", error=str(e)[:300], time=now_iso()))
+                append_failed(cfg.failed_file, FailedEntry(paper_id=p.rec.paper_id, citekey=p.rec.citekey, stage="pipeline", error=str(e)[:300], time=now_iso()))
+                log_build(cfg.build_log_file, p.rec.paper_id, "pipeline", "ERROR", str(e)[:200])
                 if not cfg.continue_on_error:
                     break
     finally:

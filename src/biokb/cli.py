@@ -205,11 +205,14 @@ def dp_test(
 @app.command("sync")
 def sync(
     refresh: bool = typer.Option(False, "--refresh", help="强制重新扫描 Zotero storage"),
+    concurrency: Optional[int] = typer.Option(None, "--concurrency", help="digest 并发数（默认取 config.yaml digest.concurrency）"),
     root: Optional[str] = typer.Option(None, "--root"),
 ):
     """全量同步：JSON → PDF → Markdown → Digest → Index。"""
     cfg = _cfg(root)
-    with console.status("[bold green]syncing..."):
+    if concurrency is not None:
+        cfg.concurrency = max(1, int(concurrency))
+    with console.status(f"[bold green]syncing... (digest 并发 {cfg.concurrency})"):
         report = run_sync(cfg, refresh_inventory=refresh)
     tbl = Table(title="sync report")
     tbl.add_column("Stage")

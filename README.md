@@ -71,6 +71,7 @@ biokb status      # 状态总览
 ```bash
 biokb doctor                          # 环境自检
 biokb sync [--refresh]                # 增量同步（--refresh 强制重扫 storage）
+biokb sync --concurrency 12           # 指定 digest 并发数（覆盖配置）
 biokb status                          # 状态总览
 biokb search "<query>" [--top N]      # 跨库检索候选论文（论文级短结果）
 biokb digest <paper_id>               # 深度精读（支持 citekey 别名）
@@ -81,6 +82,26 @@ biokb digest-prompt test <paper>      # 用某版本 prompt 单篇试跑（.prev
 ```
 
 所有检索命令支持 `--json`（供 Agent 解析）与 `--top`。
+
+## 并发加速
+
+Digest 的 LLM 调用是主要耗时项（每篇约 5–7 分钟）。同步时**多篇并行精读**，大幅缩短全量重读时间：
+
+```bash
+biokb sync --concurrency 12           # 命令行覆盖
+BIOKB_CONCURRENCY=12 biokb sync       # 环境变量覆盖
+```
+
+```yaml
+# config.yaml
+digest:
+  concurrency: 4      # 默认 4；建议 10–15（视 API 速率限制）
+```
+
+- **并行范围**：只并行纯 LLM 调用；PDF 解析、状态写入、索引建库仍在主线程串行，保证数据一致
+- **提速参考**：10 篇 × 6 分钟，串行约 60 分钟 → 并发 10 约 6–10 分钟
+- **注意**：并发过高可能触发 API 速率限制（429），失败篇目会记录到 `system/failed.json`，下次 sync 自动重试
+- **进度**：`system/build.log` 中 `digest | PROGRESS | i/N` 实时显示完成数
 
 ## 项目定制 Digest Prompt（领域无关的关键机制）
 
@@ -141,7 +162,7 @@ Copy-Item "skill\bio-literature-kb\SKILL.md" "$env:USERPROFILE\.claude\skills\bi
 - **文献身份来自 Zotero JSON**（citekey / DOI），PDF 文件名只是 fallback 证据
 - **PDF 解析四级**：attachment 路径 → attachment key → 文件名精确 → 模糊匹配（含截断标题识别、作者年份前缀剥离、同文不同副本判定）
 - **解析器优先级**：docling → mineru → pymupdf4llm（按环境动态检测；MinerU 建议装独立 venv 后在 config 指定 `mineru_bin`）
-- **Digest**：单篇单会话深度精读（1M 上下文模型），thinking/effort 可配置；长文自动分段提取后合成
+- **Digest**：单篇单会话深度精读（1M 上下文模型），thinking/effort 可配置；长文自动分段提取后合成；多篇 LLM 调用并发执行（`digest.concurrency`）
 - **索引**：SQLite FTS5（papers / digests / fulltext），无 Vector DB
 - **增量**：PDF SHA256 未变 + 产物齐全 → SKIP；JSON 更新 → 自动重扫 storage；digest_version 变化 → 只重做 Digest
 
