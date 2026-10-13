@@ -18,6 +18,8 @@ unresolved: NEVER enumerate guessed alternative equations, including guesses sai
 to follow from dimensions. Symbol meanings require explicit source definitions;
 a hat or conventional letter is not evidence of a visible definition. Separate
 normalizing factors within terms from weights multiplying already-defined losses.
+If a fraction denominator, bound or continuation is missing, do not write a
+partial numerator as the formula definition. Use unresolved, not an equality.
 Do not infer unit loss weights just from a missing coefficient or missing equation.
 Use unclear/not_available_in_input for unresolved symbols/layout; extraction loss
 is not evidence that the author omitted them. A crop verifies only its visible

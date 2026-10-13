@@ -46,6 +46,11 @@ biokb review-pdf paper.pdf --root . --output reviews/paper-a --pages none --appl
 索引不是完整数学OCR，可能只定位到公式编号或碎片，需检查原页并扩展裁剪范围。
 报告分别记录原式、符号/范围/约束、实现含义和未恢复内容，不自行补公式或替作者修正。
 具体裁剪格式、预算与恢复边界见 [PDF阅读说明](skill/bio-literature-kb/references/pdf-reading.md#formula-recovery-and-targeted-verification)。
+
+精读以论文主题与主线为中心，不逐条整理无关参考文献或补充文件。
+`--text-pages 1-12,15-20` 可显式限定正文/Methods范围（需先核对实际页码，不能跳过参考文献后面的Methods）。
+重要扫描页可选 `--ocr-sparse --ocr-tessdata /path/to/tessdata` 做本地OCR；不自动安装模型，不发送图片API。
+排除范围、OCR不确定性和未读图像均写入覆盖记录；范围内发现阴性结果仍必须保留。
 扫描页需要文字转录，不能只做图注；剩余未处理扫描页阻止生成精读。
 图页优先结构和少量清晰数值，不逐格抄写密集散点图，必要时留待裁切复核。
 

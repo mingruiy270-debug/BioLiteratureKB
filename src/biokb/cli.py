@@ -40,8 +40,13 @@ def review_pdf(
     output: Path = typer.Option(..., "--output", help="Dedicated single-paper output directory"),
     version: str = typer.Option("research_deepread_v2", "--version"),
     pages: str = typer.Option("none", "--pages", help="Default text-only; auto previews candidates; explicit pages: 5,6"),
+    text_pages: str = typer.Option("all", "--text-pages", help="Explicit main-paper scope, e.g. 1-12,15-20; preserve Methods after References"),
     formula_crops: Optional[Path] = typer.Option(None, "--formula-crops", exists=True, dir_okay=False,
         help="JSON list of explicit {page,bbox,reason} equation crops; normalized bbox; incompatible with --pages"),
+    ocr_sparse: bool = typer.Option(False, "--ocr-sparse", help="Local OCR of sparse pages only; needs installed language data"),
+    ocr_tessdata: Optional[Path] = typer.Option(None, "--ocr-tessdata", exists=True, file_okay=False),
+    ocr_language: str = typer.Option("eng", "--ocr-language"),
+    ocr_dpi: int = typer.Option(300, "--ocr-dpi"),
     max_vision_pages: int = typer.Option(2, "--max-vision-pages"),
     max_calls: int = typer.Option(5, "--max-calls"),
     max_reserved_tokens: int = typer.Option(800000, "--max-reserved-tokens"),
@@ -55,12 +60,17 @@ def review_pdf(
 ):
     """One PDF: native text + selected visual pages + generic digest. Default: no API."""
     from .paper_review import Limits, ReviewError, run_review
+    from .local_ocr import OCRSettings
     try:
+        if ocr_sparse != (ocr_tessdata is not None):
+            raise ValueError("Use --ocr-sparse and --ocr-tessdata together; no automatic OCR installation")
         result = run_review(Config(Path(root) if root else None, discover_sources=False), pdf, output, version, pages,
                             Limits(max_vision_pages=max_vision_pages, max_calls=max_calls,
                                    max_reserved_tokens=max_reserved_tokens, max_usd=max_usd, max_vision_usd=max_vision_usd, digest_output_tokens=digest_max_tokens,
                                    input_usd_per_million=input_rate, output_usd_per_million=output_rate), apply,
-                            formula_crops=json.loads(formula_crops.read_text(encoding="utf-8")) if formula_crops else None)
+                            formula_crops=json.loads(formula_crops.read_text(encoding="utf-8")) if formula_crops else None,
+                            ocr=OCRSettings(str(ocr_tessdata),ocr_language,ocr_dpi) if ocr_sparse else None,
+                            text_pages=text_pages)
     except (ReviewError, ValueError, FileNotFoundError) as e:
         console.print(f"[red]{e}[/red]")
         raise typer.Exit(1)

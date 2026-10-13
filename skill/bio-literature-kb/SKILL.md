@@ -36,7 +36,7 @@ Run `biokb doctor` to verify the environment.
 
 For PDF ingestion quality, figures/formulas, or a paid single-paper test, read
 [PDF reading](references/pdf-reading.md). Prefer `biokb review-pdf` (offline plan
-by default; `--apply` explicitly permits API calls). It combines all-page native
+by default; `--apply` explicitly permits API calls). It combines in-scope native
 text with selected visual supplements and records coverage and bounded usage.
 Text/captions are the default. Use vision only for important information that
 text cannot convey; technical image detection is candidate triage, not a reason
@@ -44,6 +44,12 @@ to send every figure. Explicit page/crop selection is required for paid vision.
 For important equations use the local `equations.json` candidate index and the
 formula contract in that reference; unresolved extraction is not author omission.
 Use `--formula-crops` only where native text cannot resolve essential math.
+Prioritize the paper's scientific subject: core question, methods, results and
+limits. Do not enumerate unrelated bibliography or chase every supplement.
+Use explicit `--text-pages` when appendices/reference-only pages are irrelevant;
+keep Methods even when placed after References, and disclose excluded pages.
+For important in-scope scanned text, optional `--ocr-sparse --ocr-tessdata ...`
+uses local OCR; excluded supplementary scans need not block the main-paper review.
 Do not describe parser installation, Markdown length or a completed API request
 as evidence of correct full-text reading. Never automatically retry uncertain
 billable requests or silently truncate material to meet a budget.

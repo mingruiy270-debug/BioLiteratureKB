@@ -6,7 +6,7 @@ hashes, install OCR models, or start `sync`.
 
 ## What happens
 
-1. Local native-text extraction keeps one labeled section per PDF page. A basic
+1. Local native-text extraction keeps one labeled section per in-scope PDF page. A basic
    coverage TSV records sparse pages, visual candidates and parser warnings.
    Low extracted-text coverage retains the native alternative; no silent cut-off.
 2. **Default is text and captions only (`--pages none`), one digest call.**
@@ -102,6 +102,14 @@ of accurate/full reading. Do not call previews official or claim parity with a
 web UI without a matched quality comparison. Supplements and source code need
 their own actual input; a prompt does not download them.
 
+For a paid pilot, spot-check a small set of consequential main-paper claims before
+handoff: especially comparator eligibility/ranking scope, statistical units,
+normalization/loss definitions and negative results. Prompt strengthening alone
+does not reliably fix such errors. Preserve raw API output; put source-supported
+corrections in a clearly labeled reviewed copy, recording targeted review rather
+than human approval or exhaustive verification. Keep only core unresolved issues,
+not a task list of every missing supplement. No automatic paid rewrite loops.
+
 The local extractor also detects missing numbered equations/math glyphs and
 retains the native alternative text. This avoids equating parser loss with
 "not reported in the paper". It is a loss-warning heuristic, not a formula
@@ -172,10 +180,54 @@ whole-page reading requirement of a sparse/scanned page: resolve OCR first.
 
 Default remains one text call, no vision. No extra model call is made to build
 the index or formula explanation; the latter is part of the final digest.
-Contract version is now `bounded-review-6`; older prepared directories remain
+Contract version is now `bounded-review-9`; older prepared directories remain
 untouched and cannot silently resume under changed extraction/prompt semantics.
 This guard applies to `complete-review` too. Native formula candidate blocks
 absent from Markdown are retained even when prose still mentions their number.
+
+## Focus on the paper, not its bibliography
+
+The generic prompt prioritizes the scientific question, essential methods, key
+results and limitations. Do not summarize every reference or collect every
+supplement. Expand only material needed to understand a central claim. This is
+not permission to omit inconvenient negative findings or essential Methods.
+
+After inspecting the document layout, `--text-pages 1-12,15-20` explicitly selects
+the relevant pages (example only). Do not simply stop at the first References:
+some journals place Methods afterward. The CLI defaults to `all` rather than
+guessing section boundaries; the agent chooses a smaller scope when justified.
+Mixed body/reference pages may be kept, while the prompt ignores unrelated
+bibliographic listings. Page selection preserves original PDF numbering, records
+excluded pages in coverage/plan and forbids selecting images outside that scope.
+Excluded pages are not "read", not "missing", and not a whole-PDF reading claim.
+Changing scope requires a new output directory; no stale paid result is reused.
+
+## Optional local OCR, only for needed sparse pages
+
+```bash
+biokb review-pdf paper.pdf --root /path/to/kb --output reviews/scanned-main \
+  --text-pages 1-10 --ocr-sparse --ocr-tessdata /path/to/tessdata \
+  --ocr-language eng --ocr-dpi 300
+```
+
+Install compatible local Tesseract language data separately. This command does
+not download/install anything or use a paid OCR API. PyMuPDF's integrated OCR
+needs a compatible runtime and traineddata; the tested local wheel could use
+explicit traineddata without a separately installed Tesseract executable.
+Other builds may require the application as described in the official docs.
+
+Only in-scope pages with <200 native characters are OCR candidates. Rendering is
+bounded at 20 million pixels per page; no GPU model is loaded. `ocr_pages.json`
+records recognized text, language, effective DPI, runtime version and local model
+path/size/mtime. Prepared OCR is cached through normal resume checks. Too-short
+OCR still blocks reading; longer OCR is labeled unverified, **not** proven good.
+Checkbox state, dense forms, mathematical layout and numbers remain fallible.
+Do not infer selected form choices from OCR text. OCR failure does not silently
+trigger paid vision. Unrelated scanned appendices may instead be explicitly
+excluded; do not spend effort recognizing them merely to claim exhaustive scope.
+
+Sources: [PyMuPDF OCR](https://pymupdf.readthedocs.io/en/latest/recipes-ocr.html),
+[Tesseract fast language data](https://github.com/tesseract-ocr/tessdata_fast).
 
 Official API references:
 - https://api-docs.deepseek.com/guides/vision/

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "biokb"
-version = "0.2.1"
+version = "0.2.2"
 description = "BioLiteratureKB: local research literature knowledge base for the full research lifecycle (topic selection, design, analysis, writing, revision). Biomedicine out of the box; any domain (deep learning, ML, etc.) via customizable digest prompts. Zotero -> PDF -> Markdown -> Paper Digest -> FTS retrieval -> Agent skill."
 requires-python = ">=3.10"
 dependencies = [
