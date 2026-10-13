@@ -15,7 +15,7 @@ hashes, install OCR models, or start `sync`.
    presence/complexity alone is not a reason to send it. `auto`
    uses sparse text, substantial raster images and body vector objects; this is a
    triage heuristic, not proof that unflagged pages contain no equations/tables.
-   is offline candidate triage only, not permission to call vision. Inspect the
+   It is offline candidate triage only, not permission to call vision. Inspect the
    text/plan and explicitly select 1-based `--pages 5,6` only when justified.
    Image-only/sparse pages receive a prose-transcription instruction, not a
    figure-only prompt. Unselected sparse pages or explicitly incomplete
@@ -79,6 +79,8 @@ usage or overruns stop further work rather than being concealed.
   text-only completion. `--apply` permits ONE additional request; earlier usage
   stays in the same cost/token ceiling, images are not resent, and unknown-use
   failures cannot use this recovery. This is not an automatic retry loop.
+  Cached visual notes (including unresolved equations) are validated and reused
+  with their original whole-page/crop scope; their text counts toward input cost.
 - Input/prompt/limits/model changes stop resumption. Review them and use a new
   output directory only with new authorization for the additional expense.
 - One transient `.running` process lock protects against concurrent duplication.
@@ -109,6 +111,71 @@ The legacy `sync`/`digest-prompt test` path remains text-only and does not inher
 these single-paper budget controls. Do not promise these limits for a library
 sync. Use the bounded single-paper command for controlled pilots; separately
 authorize any library-wide integration or refresh.
+
+## Formula recovery and targeted verification
+
+Every local plan now writes `equations.json`: heuristic native-text candidate
+blocks, PDF page, possible equation numbers, normalized bounding boxes and
+adjacent native context. It is **not** complete mathematical OCR, validated
+LaTeX, or a reliable symbol-definition join. Operators in prose/tables can be
+false positives; raster/outlined or operator-free formulas may be missed.
+Native LaTeX is left null rather than invented. Read `source.md` alongside it.
+
+The digest records important equations in context: original expression, symbols,
+reported dimensions/units, index/reduction ranges, assumptions, constraints,
+implementation role and source location. Author expressions, explanatory
+rewrites and uncertain recovery remain distinct. Do not force a formula table
+on a paper without relevant mathematics. Missing extraction must never become
+"the authors did not specify weights".
+
+An actual DeepSeek test recovered the selected loss correctly but still guessed
+another unresolved equation and misattributed it to visual evidence. Prompting
+alone does not eliminate this risk. `review.json` therefore separates transport
+completion from `semantic_review_status` and records `review_warnings` for missing
+digest frontmatter and some numbered-equation visual-attribution mismatches.
+These are conservative regex triage (false positives/negatives are possible),
+not full metadata/schema or math validation. Agents must compare important
+formula claims with their actual source before reuse/publication. Never infer
+scientific approval from zero warnings or a successful API response.
+
+If a critical equation remains unreadable, create a small JSON selection file:
+
+```json
+[
+  {"page": 18, "bbox": [0.10, 0.35, 0.90, 0.65],
+   "reason": "Loss subscripts and normalization denominator missing from native text"}
+]
+```
+
+Coordinates refer to the **displayed PDF page**, origin top left; page is 1-based
+and bbox is `[x0,y0,x1,y1]` normalized to 0..1. The numbers above are illustrative,
+not a verified crop for a particular paper. Inspect local candidate geometry and
+include the entire expression/number and nearby definitions, allowing padding.
+One region per page; combine nearby equations if legible. Distant regions need
+an explicitly reviewed subsequent pass, not automatic repeated requests.
+
+```bash
+biokb review-pdf paper.pdf --root /path/to/kb --output reviews/paper-a-formulas \
+  --formula-crops formula-crops.json
+# Inspect the offline plan and rendered pages/page_018.jpg before --apply.
+```
+
+`--formula-crops` and `--pages` selections are mutually exclusive. Selected crops
+replace full-page images, consume the **same** visual-attempt/token/cost limits,
+and get a math-transcription prompt (not the terse figure-caption prompt).
+The crop is labeled as partial-page evidence in coverage and final input.
+`formula_crops.json` retains the exact region/reason/native region text; it is
+part of resume validation. Success is cached; failures are never auto-retried.
+An unreadable formula is marked `UNRESOLVED_FORMULA`, remains a limitation in the
+report and cannot be presented as a recovered fact. A crop cannot satisfy the
+whole-page reading requirement of a sparse/scanned page: resolve OCR first.
+
+Default remains one text call, no vision. No extra model call is made to build
+the index or formula explanation; the latter is part of the final digest.
+Contract version is now `bounded-review-6`; older prepared directories remain
+untouched and cannot silently resume under changed extraction/prompt semantics.
+This guard applies to `complete-review` too. Native formula candidate blocks
+absent from Markdown are retained even when prose still mentions their number.
 
 Official API references:
 - https://api-docs.deepseek.com/guides/vision/

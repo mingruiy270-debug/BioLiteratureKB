@@ -46,6 +46,7 @@ def test_dry_run_no_api_and_coverage(fixture):
     assert len(state["pages"]) == 2
     assert "PDF page 2" in (out / "source.md").read_text()
     assert not transport.called
+    assert json.loads((out / "equations.json").read_text())["candidates"] == []
 
 
 def test_apply_then_resume_without_charge(fixture):

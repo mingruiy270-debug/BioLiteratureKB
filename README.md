@@ -41,6 +41,11 @@ biokb review-pdf paper.pdf --root . --output reviews/paper-a --pages none --appl
 先检查整篇计划，再逐次预留费用；成功调用可续用，超时/截断不自动重试。
 页面未读、正文缺失或预算不够会明确报告，不通过静默删正文节省token。
 编号公式或数学符号被Markdown解析丢失时，保留原生文本备选，不再直接说“原文未报告”。
+新增离线 `equations.json` 原生公式候选索引（页码、位置、原文片段和相邻上下文），
+以及 `--formula-crops selection.json` 关键公式局部核查；不自动识图，不新增默认API调用。
+索引不是完整数学OCR，可能只定位到公式编号或碎片，需检查原页并扩展裁剪范围。
+报告分别记录原式、符号/范围/约束、实现含义和未恢复内容，不自行补公式或替作者修正。
+具体裁剪格式、预算与恢复边界见 [PDF阅读说明](skill/bio-literature-kb/references/pdf-reading.md#formula-recovery-and-targeted-verification)。
 扫描页需要文字转录，不能只做图注；剩余未处理扫描页阻止生成精读。
 图页优先结构和少量清晰数值，不逐格抄写密集散点图，必要时留待裁切复核。
 

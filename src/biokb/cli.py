@@ -40,6 +40,8 @@ def review_pdf(
     output: Path = typer.Option(..., "--output", help="Dedicated single-paper output directory"),
     version: str = typer.Option("research_deepread_v2", "--version"),
     pages: str = typer.Option("none", "--pages", help="Default text-only; auto previews candidates; explicit pages: 5,6"),
+    formula_crops: Optional[Path] = typer.Option(None, "--formula-crops", exists=True, dir_okay=False,
+        help="JSON list of explicit {page,bbox,reason} equation crops; normalized bbox; incompatible with --pages"),
     max_vision_pages: int = typer.Option(2, "--max-vision-pages"),
     max_calls: int = typer.Option(5, "--max-calls"),
     max_reserved_tokens: int = typer.Option(800000, "--max-reserved-tokens"),
@@ -57,12 +59,15 @@ def review_pdf(
         result = run_review(Config(Path(root) if root else None, discover_sources=False), pdf, output, version, pages,
                             Limits(max_vision_pages=max_vision_pages, max_calls=max_calls,
                                    max_reserved_tokens=max_reserved_tokens, max_usd=max_usd, max_vision_usd=max_vision_usd, digest_output_tokens=digest_max_tokens,
-                                   input_usd_per_million=input_rate, output_usd_per_million=output_rate), apply)
+                                   input_usd_per_million=input_rate, output_usd_per_million=output_rate), apply,
+                            formula_crops=json.loads(formula_crops.read_text(encoding="utf-8")) if formula_crops else None)
     except (ReviewError, ValueError, FileNotFoundError) as e:
         console.print(f"[red]{e}[/red]")
         raise typer.Exit(1)
     console.print_json(data={"status": result["status"], "output": str(output),
-                             "plan": result["plan"], "actual_usage": result.get("actual_usage")})
+                             "plan": result["plan"], "actual_usage": result.get("actual_usage"),
+                             "semantic_review_status": result.get("semantic_review_status"),
+                             "review_warnings": result.get("review_warnings", [])})
 
 
 @app.command("complete-review")

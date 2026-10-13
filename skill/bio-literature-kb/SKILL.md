@@ -40,7 +40,10 @@ by default; `--apply` explicitly permits API calls). It combines all-page native
 text with selected visual supplements and records coverage and bounded usage.
 Text/captions are the default. Use vision only for important information that
 text cannot convey; technical image detection is candidate triage, not a reason
-to send every figure. Explicit page selection is required for paid vision.
+to send every figure. Explicit page/crop selection is required for paid vision.
+For important equations use the local `equations.json` candidate index and the
+formula contract in that reference; unresolved extraction is not author omission.
+Use `--formula-crops` only where native text cannot resolve essential math.
 Do not describe parser installation, Markdown length or a completed API request
 as evidence of correct full-text reading. Never automatically retry uncertain
 billable requests or silently truncate material to meet a budget.
