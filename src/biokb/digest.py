@@ -51,9 +51,11 @@ def _part_extract(client: LLMClient, prompt: str, meta: str, part_name: str, tex
 
 def _synthesize(client: LLMClient, prompt: str, meta: str, parts: List[Dict[str, str]]) -> str:
     joined = "\n\n=====PART=====\n\n".join(f"[{p['name']}]\n{p['text']}" for p in parts)
+    if len(joined) > max(200_000, client.cfg.max_chars_per_call):
+        raise ValueError("Synthesis exceeds configured text limit; split explicitly, never silently truncate")
     messages = [
         {"role": "system", "content": SYSTEM_ROLE},
-        {"role": "user", "content": f"任务：{prompt}\n\n论文元数据：\n{meta}\n\n以下是该论文按 section 分批提取的内容。请基于这些内容（它们覆盖了论文全文），输出该论文完整的 Paper Digest（Digest 结构按任务要求）：\n\n{joined[:200_000]}"},
+        {"role": "user", "content": f"任务：{prompt}\n\n论文元数据：\n{meta}\n\n以下是已提供材料按section分批提取的内容，不保证图表/补充/代码完整。保留来源与覆盖限制，输出Paper Digest：\n\n{joined}"},
     ]
     return client.chat(messages)
 
@@ -72,7 +74,7 @@ def build_digest(
     parts: List[Dict[str, str]] = []
     buf, size = [], 0
     for name, text in sections:
-        buf.append(text)
+        buf.append(f"## {name}\n{text}")
         size += len(text)
         if size >= cfg.max_chars_per_call:
             parts.append({"name": name, "text": "\n\n".join(buf)})
@@ -110,7 +112,7 @@ def build_record(client: LLMClient, rec: PaperRecord, digest_md: str) -> Dict[st
     try:
         messages = [
             {"role": "system", "content": SYSTEM_ROLE},
-            {"role": "user", "content": f"{_RECORD_PROMPT}\n\n论文元数据：\n{_meta_block(rec, client.cfg)}\n\nPaper Digest：\n{digest_md[:120_000]}"},
+            {"role": "user", "content": f"{_RECORD_PROMPT}\n\n论文元数据：\n{_meta_block(rec, client.cfg)}\n\nPaper Digest：\n{digest_md}"},
         ]
         data = client.chat_json(messages)
         if data and isinstance(data, dict):

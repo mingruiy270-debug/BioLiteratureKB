@@ -42,7 +42,7 @@ llm:
   temperature: 0.0
   timeout_seconds: 600         # thinking 模式 + 长文精读需要更长超时
   max_retries: 3
-  max_tokens: 384000           # 模型最大输出预算（max effort 下官方建议到 384K）；设 0 则省略该字段
+  max_tokens: 393216           # 官方384K最大输出；仅按实际token计费，不是要求写满
   thinking: enabled            # deepseek-v4-flash thinking 模式（enabled/disabled）
   reasoning_effort: max        # low / high / max（thinking 模式下的推理深度）
 

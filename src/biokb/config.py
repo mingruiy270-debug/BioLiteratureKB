@@ -79,7 +79,7 @@ def detect_json_dir(root: Path, explicit: Optional[Path]) -> Path:
 
 
 class Config:
-    def __init__(self, root: Path | None = None):
+    def __init__(self, root: Path | None = None, *, discover_sources: bool = True):
         load_dotenv()
         self.root: Path = (root or find_project_root()).resolve()
         raw = self._load_yaml(self.root / "config.yaml")
@@ -89,11 +89,11 @@ class Config:
         storage_val = str(zotero.get("storage_root", "") or "").strip()
         self.zotero_json_dir = detect_json_dir(
             self.root,
-            self._p(zotero, "json_dir", "zotero/json") if json_val and json_val.lower() != "auto" else None,
-        )
+            self._p(raw, "zotero", "json_dir", "zotero/json") if json_val and json_val.lower() != "auto" else None,
+        ) if discover_sources else self.root / "zotero/json"
         self.zotero_storage_root = detect_zotero_storage(
-            self._p(zotero, "storage_root", "") if storage_val and storage_val.lower() != "auto" else None
-        )
+            self._p(raw, "zotero", "storage_root", "") if storage_val and storage_val.lower() != "auto" else None
+        ) if discover_sources else self.root / "zotero/storage"
 
         self.pdf_output_dir = self._p(raw, "pdf", "output_dir", "zotero/原文PDF")
         self.pdf_inventory_file = self._p(raw, "pdf", "inventory_file", "system/pdf_inventory.json")
@@ -127,7 +127,7 @@ class Config:
         self.llm_temperature = float(llm.get("temperature", 0.0))
         self.llm_timeout_seconds = int(llm.get("timeout_seconds", 600))
         self.llm_max_retries = int(llm.get("max_retries", 3))
-        self.llm_max_tokens = int(llm.get("max_tokens", 384000))
+        self.llm_max_tokens = int(llm.get("max_tokens", 393216))
         self.llm_thinking = os.environ.get("BIOKB_LLM_THINKING", llm.get("thinking", "enabled"))
         self.llm_reasoning_effort = os.environ.get("BIOKB_LLM_REASONING_EFFORT", llm.get("reasoning_effort", "max"))
         retr = raw.get("retrieval", {})

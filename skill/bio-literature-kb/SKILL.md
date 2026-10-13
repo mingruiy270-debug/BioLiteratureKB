@@ -32,6 +32,19 @@ The `biokb` CLI must be installed. It is a local Python package (see the repo's 
 
 Run `biokb doctor` to verify the environment.
 
+## PDF reading and cost-controlled pilots
+
+For PDF ingestion quality, figures/formulas, or a paid single-paper test, read
+[PDF reading](references/pdf-reading.md). Prefer `biokb review-pdf` (offline plan
+by default; `--apply` explicitly permits API calls). It combines all-page native
+text with selected visual supplements and records coverage and bounded usage.
+Text/captions are the default. Use vision only for important information that
+text cannot convey; technical image detection is candidate triage, not a reason
+to send every figure. Explicit page selection is required for paid vision.
+Do not describe parser installation, Markdown length or a completed API request
+as evidence of correct full-text reading. Never automatically retry uncertain
+billable requests or silently truncate material to meet a budget.
+
 ## Available commands
 
 Search candidate papers:
@@ -117,7 +130,12 @@ When the user asks for scientific help:
 
 ## Project-specific digest prompts (first use or on request)
 
-Paper Digests follow a versioned prompt (`prompts/paper_digest_v1.md` by default). A prompt can be customized for the user's research project so that every paper is read with the project's questions, axes, and terminology in mind.
+Paper Digests follow a versioned prompt (`prompts/paper_digest_v1.md` by default).
+The optional `research_deepread_v2` prompt is a generic, implementation- and
+evidence-aware reader across research domains. Single-paper reading should first
+preserve the paper's own useful knowledge, failures and reusable assets; project
+selection and cross-paper synthesis are separate. Add project-specific focus
+only when the user requests it, not as a mandatory part of every customization.
 
 This is a **one-time or rare setup step** — do it only when:
 
@@ -132,10 +150,10 @@ Workflow (may be executed autonomously by the agent, with the user only providin
 
 1. Read the project documents the user points to (design file, summaries, CLAUDE.md, etc.) and identify what the project cares about: background, core questions, domain terms, method families, reading priorities, conventions.
 2. Run `biokb digest-prompt create <name>` to derive a new prompt from the active version.
-3. Edit `prompts/paper_digest_<name>.md`: add a `## 项目聚焦` (Project focus) section listing those items — telling the reader which content to extract in more detail and which terminology to prefer.
+3. Edit `prompts/paper_digest_<name>.md`. Keep generic reading generic; add `## 项目聚焦` only for explicitly requested project focus. Never filter away key evidence just because it is outside a current project.
 4. Show the user the draft before anything else happens.
-5. Run `biokb digest-prompt test <paper_id> --version <name>` to regenerate one paper as a preview (`*.preview.md`, never overwrites the real digest), and let the user check quality.
-6. If the user approves, run `biokb digest-prompt use <name>` and run `biokb sync` (all papers are re-read with the new prompt — warn the user about the time and cost first).
+5. With authorization for the API expense, prefer a `review-pdf` pilot with an explicit page/cost budget; `digest-prompt test` is the older text-only preview and has different cost behavior. Let the user check quality.
+6. If the user approves, activate with `biokb digest-prompt use <name>`. Activation does not authorize `sync`: disclose the scope, time and cost of re-reading the library and obtain separate authorization before a bulk refresh.
 
 Customization may change extraction depth, emphasis, and vocabulary — it must never relax the fact discipline: `not_reported` / `unclear` / `null`, no fabrication, no claiming predictions as causation, and no project advice inside a single-paper digest.
 

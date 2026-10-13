@@ -48,7 +48,7 @@ def test_config_auto_resolution(tmp_path):
     assert cfg.root == tmp_path.resolve()
     assert cfg.index_db.parent == tmp_path / "index"
     assert cfg.digest_version == "v1"
-    assert cfg.llm_max_tokens == 384000
+    assert cfg.llm_max_tokens == 393216
     cfg.ensure_dirs()
     assert (tmp_path / "paper_digests").exists()
     assert (tmp_path / "index").exists()

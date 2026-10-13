@@ -34,6 +34,53 @@ app.add_typer(app_group, name="digest-prompt")
 console = Console()
 
 
+@app.command("review-pdf")
+def review_pdf(
+    pdf: Path = typer.Argument(..., exists=True, dir_okay=False),
+    output: Path = typer.Option(..., "--output", help="Dedicated single-paper output directory"),
+    version: str = typer.Option("research_deepread_v2", "--version"),
+    pages: str = typer.Option("none", "--pages", help="Default text-only; auto previews candidates; explicit pages: 5,6"),
+    max_vision_pages: int = typer.Option(2, "--max-vision-pages"),
+    max_calls: int = typer.Option(5, "--max-calls"),
+    max_reserved_tokens: int = typer.Option(800000, "--max-reserved-tokens"),
+    max_usd: float = typer.Option(0.0, "--max-usd", help="Optional whole-run estimated money cap; 0 = no cap on text spending"),
+    max_vision_usd: float = typer.Option(.02, "--max-vision-usd", help="Separate visual-attempt budget, USD"),
+    digest_max_tokens: int = typer.Option(393216, "--digest-max-tokens", help="Report output ceiling, not a target length"),
+    input_rate: float = typer.Option(.30, "--input-rate", help="USD per million input tokens; verify provider rates"),
+    output_rate: float = typer.Option(1.20, "--output-rate", help="USD per million output tokens"),
+    apply: bool = typer.Option(False, "--apply", help="Explicitly permit bounded API calls"),
+    root: Optional[str] = typer.Option(None, "--root"),
+):
+    """One PDF: native text + selected visual pages + generic digest. Default: no API."""
+    from .paper_review import Limits, ReviewError, run_review
+    try:
+        result = run_review(Config(Path(root) if root else None, discover_sources=False), pdf, output, version, pages,
+                            Limits(max_vision_pages=max_vision_pages, max_calls=max_calls,
+                                   max_reserved_tokens=max_reserved_tokens, max_usd=max_usd, max_vision_usd=max_vision_usd, digest_output_tokens=digest_max_tokens,
+                                   input_usd_per_million=input_rate, output_usd_per_million=output_rate), apply)
+    except (ReviewError, ValueError, FileNotFoundError) as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    console.print_json(data={"status": result["status"], "output": str(output),
+                             "plan": result["plan"], "actual_usage": result.get("actual_usage")})
+
+
+@app.command("complete-review")
+def complete_review(
+    output: Path = typer.Argument(..., exists=True, file_okay=False),
+    apply: bool = typer.Option(False, "--apply", help="Explicitly permit one additional final text call within existing cost ceiling"),
+    root: Optional[str] = typer.Option(None, "--root"),
+):
+    """Complete a known truncated final digest; preserve earlier usage, no image calls."""
+    from .paper_review import complete_text_preview, ReviewError
+    try:
+        result = complete_text_preview(Config(Path(root) if root else None, discover_sources=False), output, apply)
+    except (ReviewError, ValueError, FileNotFoundError) as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    console.print_json(data=result)
+
+
 def _cfg(root: Optional[str]) -> Config:
     if root:
         return get_config(Path(root))
@@ -158,7 +205,7 @@ def dp_create(
         console.print(f"[red]{e}[/red]")
         raise typer.Exit(1)
     console.print(f"[green]已创建: {dst}[/green]")
-    console.print("编辑该文件并注入「## 项目聚焦」段落（项目背景 / 核心问题 / 关注轴与方法 / 术语偏好）。")
+    console.print("编辑通用精读规则；只有用户明确要求项目聚焦时才加入项目背景，避免限制单篇知识提取。")
     console.print("定制只影响详略与聚焦，不得放宽事实纪律（not_reported / 不编造 / 不写项目建议）。")
     console.print("完成后: biokb digest-prompt test <paper_id> --version <name>   # 单篇试跑")
 

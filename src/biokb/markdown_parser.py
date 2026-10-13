@@ -50,6 +50,9 @@ def split_sections(md: str) -> List[Tuple[str, str]]:
     matches = list(HEADING_RE.finditer(md))
     if len(matches) >= 2:
         sections = []
+        preamble = md[:matches[0].start()].strip()
+        if preamble:
+            sections.append(("Preamble", preamble))
         for i, m in enumerate(matches):
             name = m.group(1).strip()
             start = m.end()

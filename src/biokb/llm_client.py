@@ -17,6 +17,10 @@ class LLMNotConfigured(Exception):
     pass
 
 
+class IncompleteLLMOutput(RuntimeError):
+    """Do not retry a billable length-truncated output automatically."""
+
+
 class LLMClient:
     def __init__(self, cfg: Config):
         self.cfg = cfg
@@ -49,6 +53,8 @@ class LLMClient:
         )
         resp.raise_for_status()
         data = resp.json()
+        if data["choices"][0].get("finish_reason") != "stop":
+            raise IncompleteLLMOutput("LLM output incomplete; inspect budget instead of silently accepting/retrying")
         return data["choices"][0]["message"]["content"].strip()
 
     @retry(
@@ -58,7 +64,7 @@ class LLMClient:
         reraise=True,
     )
     def chat(self, messages: List[Dict[str, str]], max_tokens: Optional[int] = None) -> str:
-        """max_tokens 缺省时使用 config 的 llm.max_tokens（默认 384000，thinking 模式下的模型上限）。"""
+        """max_tokens 缺省时使用 config 的 llm.max_tokens（默认 393216 / 384K）。"""
         if not self.configured():
             raise LLMNotConfigured("BIOKB_LLM_API_KEY / BASE_URL / MODEL 未配置")
         return self._chat_once(messages, max_tokens if max_tokens is not None else self.cfg.llm_max_tokens)

@@ -10,6 +10,8 @@ dist/
 
 # 密钥与本地环境
 .env
+reviews/
+*.running
 
 # 运行时生成物（索引 / 状态 / 日志 / 失败清单）
 index/
